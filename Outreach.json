@@ -1,0 +1,197 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "ec3d1077-00c8-4bd9-98fc-ee38e7b5be79",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-2192, 112]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Uwux0kV3eomuPcgld4Hvjj7pVwxYN2hRphqx9R-k1Lc",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1347388914,
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "1a475f51-30c7-48c3-9e7a-2c84d0aec318",
+      "name": "Read Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-1920, 112]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status.toString().trim() }}",
+              "rightValue": "NEW",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "ab2e139f-5835-4f68-9241-db09ba0de31e",
+      "name": "Filter NEW",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-1216, 32]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Uwux0kV3eomuPcgld4Hvjj7pVwxYN2hRphqx9R-k1Lc",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1347388914,
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "send_lock": "true",
+            "status": "GENERATING",
+            "lead_id": "={{ $json.lead_id }}",
+            "name": "={{ $json.name }}",
+            "company": "={{ $json.company }}",
+            "role": "={{ $json.role }}",
+            "context": "={{ $json.context }}",
+            "email": "={{ $json.email }}"
+          },
+          "matchingColumns": ["lead_id"]
+        }
+      },
+      "id": "ea1fa71d-46d2-4ff8-894c-0988f27eb3fd",
+      "name": "Acquire Lock",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-944, 16]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return { json: { ...$json, sender_email: 'wrkethiz2453@gmail.com' } };"
+      },
+      "id": "baf378d9-4089-4d0a-8988-1dd052aeb656",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1648, 112]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert sales copywriter...\n\nIMPORTANT INSTRUCTIONS:\nReturn ONLY valid JSON with subject and body."
+      },
+      "id": "9cb31ed7-4bef-444a-ae7c-972300d226cc",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [-752, 0]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "/* parse ai output */"
+      },
+      "id": "290af0a6-d6ed-4d33-9f0d-ceca15f242f9",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.email}}",
+        "subject": "={{$json.ai_subject}}",
+        "message": "={{$json.ai_body}}"
+      },
+      "id": "323ae6b6-4e02-484e-9cae-eadf69c4ce06",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [320, 160]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "SENT",
+            "sent_at": "={{ new Date().toISOString() }}",
+            "send_lock": "false"
+          },
+          "matchingColumns": ["lead_id"]
+        }
+      },
+      "id": "3f0dd582-b04c-4723-98f4-91b26aababff",
+      "name": "Mark Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [624, 32]
+    }
+  ],
+  "connections": {
+    "Cron Trigger": {
+      "main": [[{ "node": "Read Sheet", "type": "main", "index": 0 }]]
+    },
+    "Read Sheet": {
+      "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [{ "node": "Filter NEW", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filter NEW": {
+      "main": [[{ "node": "Acquire Lock", "type": "main", "index": 0 }]]
+    },
+    "Acquire Lock": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "AI Agent": {
+      "main": [[{ "node": "Parse AI Output", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Output": {
+      "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]]
+    },
+    "Send Email": {
+      "main": [[{ "node": "Mark Sent", "type": "main", "index": 0 }]]
+    }
+  },
+  "meta": {
+    "instanceId": "sanitized-export"
+  }
+}
