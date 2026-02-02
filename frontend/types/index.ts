@@ -181,6 +181,7 @@ export interface Portfolio {
     name: string
     status: 'draft' | 'published'
     resume_id: string | null
+    published_url: string | null
     blueprint: PortfolioBlueprint | null
     content: PortfolioContent | null
     design_config: DesignConfig | null
