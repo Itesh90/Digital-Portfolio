@@ -12,6 +12,7 @@ export interface User {
     id: string
     email: string
     name: string
+    username: string | null
     plan: 'free' | 'pro' | 'enterprise'
     created_at: string
     onboarding_completed: boolean
