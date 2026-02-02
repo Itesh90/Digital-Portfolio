@@ -17,26 +17,10 @@ engine_kwargs = {
 }
 
 if "sqlite" in settings.database_url:
+    # SQLite for local development
     engine_kwargs["connect_args"] = {"check_same_thread": False}
-elif "supabase" in settings.database_url:
-    # Supabase connections (both pooler and direct)
-    import ssl
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
-    
-    engine_kwargs.update({
-        "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "connect_args": {
-            "ssl": ssl_context,
-            "prepared_statement_cache_size": 0,
-            "statement_cache_size": 0,
-        },
-    })
 else:
-    # Direct PostgreSQL connection
+    # PostgreSQL (Render, Supabase, etc.)
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 5,
