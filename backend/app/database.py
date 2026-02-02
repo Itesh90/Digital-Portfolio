@@ -12,14 +12,26 @@ from app.config import get_settings
 settings = get_settings()
 
 # Create async engine
-# Create async engine
 engine_kwargs = {
     "echo": settings.is_development,
 }
 
 if "sqlite" in settings.database_url:
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+elif "pooler.supabase" in settings.database_url:
+    # Supabase Transaction Pooler requires special settings
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        # Disable prepared statements for transaction pooler
+        "connect_args": {
+            "prepared_statement_cache_size": 0,
+            "statement_cache_size": 0,
+        },
+    })
 else:
+    # Direct PostgreSQL connection
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 5,
