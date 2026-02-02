@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://localhost:5432/portfolio_db"
     
     # Authentication
-    jwt_secret_key: str = "change-me-in-production"
+    secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     s3_bucket_name: str = "portfolio-resumes"
     
     # App
-    app_env: str = "development"
+    environment: str = "development"
+    debug: bool = True
     cors_origins: str = "http://localhost:3000"
     
     @property
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
     @property
     def is_development(self) -> bool:
         """Check if running in development mode."""
-        return self.app_env == "development"
+        return self.environment == "development"
     
     class Config:
         env_file = ".env"
