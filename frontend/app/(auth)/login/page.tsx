@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 export default function LoginPage() {
@@ -21,11 +21,14 @@ export default function LoginPage() {
         setLoading(true)
 
         try {
-            const response = await api.login(email, password)
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            })
 
-            // Store tokens
-            localStorage.setItem('access_token', response.access_token)
-            localStorage.setItem('refresh_token', response.refresh_token)
+            if (authError) {
+                throw authError
+            }
 
             toast.success('Welcome back!')
 
@@ -34,16 +37,30 @@ export default function LoginPage() {
             const pendingUpload = localStorage.getItem('pending_upload')
 
             if (pendingPrompt || pendingUpload) {
-                // Clear pending items and redirect to dashboard/upload
                 localStorage.removeItem('pending_prompt')
                 localStorage.removeItem('pending_upload')
                 router.push('/dashboard/upload')
             } else {
-                router.push('/dashboard')
+                // Check onboarding status
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('onboarding_completed')
+                    .eq('id', data.user?.id)
+                    .single()
+
+                if (profile && !profile.onboarding_completed) {
+                    router.push('/onboarding')
+                } else {
+                    router.push('/dashboard')
+                }
             }
         } catch (err: any) {
-            const message = err.response?.data?.detail || 'Failed to log in'
-            setError(message)
+            const message = err.message || 'Failed to log in'
+            if (message.includes('Invalid login credentials')) {
+                setError('The email or password you entered is incorrect.')
+            } else {
+                setError(message)
+            }
         } finally {
             setLoading(false)
         }
@@ -84,7 +101,10 @@ export default function LoginPage() {
                             id="email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                setError('')
+                            }}
                             placeholder="you@example.com"
                             className={cn('input pl-10', error && 'input-error')}
                             required
@@ -105,7 +125,10 @@ export default function LoginPage() {
                             id="password"
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value)
+                                setError('')
+                            }}
                             placeholder="••••••••"
                             className={cn('input pl-10', error && 'input-error')}
                             required

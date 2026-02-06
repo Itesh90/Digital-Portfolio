@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 export default function SignupPage() {
@@ -36,12 +36,19 @@ export default function SignupPage() {
         setLoading(true)
 
         try {
-            await api.register(email, password, name)
+            const { data, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: name,
+                    }
+                }
+            })
 
-            // Auto-login after registration
-            const tokens = await api.login(email, password)
-            localStorage.setItem('access_token', tokens.access_token)
-            localStorage.setItem('refresh_token', tokens.refresh_token)
+            if (authError) {
+                throw authError
+            }
 
             toast.success('Account created successfully!')
 
@@ -50,16 +57,20 @@ export default function SignupPage() {
             const pendingUpload = localStorage.getItem('pending_upload')
 
             if (pendingPrompt || pendingUpload) {
-                // Clear pending items and redirect to dashboard/upload
                 localStorage.removeItem('pending_prompt')
                 localStorage.removeItem('pending_upload')
                 router.push('/dashboard/upload')
             } else {
-                router.push('/dashboard')
+                // New users go to onboarding
+                router.push('/onboarding')
             }
         } catch (err: any) {
-            const message = err.response?.data?.detail || 'Failed to create account'
-            setError(message)
+            const message = err.message || 'Failed to create account'
+            if (message.includes('already registered')) {
+                setError('An account with this email already exists.')
+            } else {
+                setError(message)
+            }
         } finally {
             setLoading(false)
         }
@@ -100,7 +111,10 @@ export default function SignupPage() {
                             id="name"
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => {
+                                setName(e.target.value)
+                                setError('')
+                            }}
                             placeholder="John Doe"
                             className="input pl-10"
                             required
@@ -116,7 +130,10 @@ export default function SignupPage() {
                             id="email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                setError('')
+                            }}
                             placeholder="you@example.com"
                             className="input pl-10"
                             required
@@ -132,7 +149,10 @@ export default function SignupPage() {
                             id="password"
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value)
+                                setError('')
+                            }}
                             placeholder="••••••••"
                             className="input pl-10"
                             required
