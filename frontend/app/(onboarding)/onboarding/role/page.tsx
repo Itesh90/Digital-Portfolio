@@ -19,16 +19,21 @@ export default function RolePage() {
         confirmedRole,
         confirmedSeniority,
         setRoleInfo,
-        setStep
+        setStep,
+        completeRoleStep
     } = useOnboardingStore()
 
     const [role, setRole] = useState(confirmedRole || '')
     const [seniority, setSeniority] = useState<SeniorityLevel | null>(confirmedSeniority)
     const [isCustomRole, setIsCustomRole] = useState(false)
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (role && seniority) {
             setRoleInfo(role, seniority)
+
+            // Save progress to database
+            await completeRoleStep()
+
             setStep(4)
             router.push('/onboarding/truth')
         }

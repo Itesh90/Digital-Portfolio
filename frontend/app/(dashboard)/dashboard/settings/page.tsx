@@ -33,9 +33,11 @@ export default function SettingsPage() {
     useEffect(() => {
         api.getMe()
             .then((u) => {
-                setUser(u)
-                setName(u.name || '')
-                setUsername(u.username || '')
+                if (u) {
+                    setUser(u)
+                    setName(u.name || '')
+                    setUsername(u.username || '')
+                }
             })
             .finally(() => setLoading(false))
     }, [])

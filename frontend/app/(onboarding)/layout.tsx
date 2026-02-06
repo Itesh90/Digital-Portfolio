@@ -1,16 +1,81 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { useOnboardingStore } from '@/lib/onboarding-store'
-import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 export default function OnboardingLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const currentStep = useOnboardingStore((state) => state.currentStep)
+    const {
+        currentStep,
+        setStep,
+        setResumeId,
+        setResumeMode,
+        setRoleInfo,
+        setParsedData,
+        setDesignIntent,
+        confirmTruth,
+        setPurpose
+    } = useOnboardingStore()
+
+    const router = useRouter()
     const totalSteps = 5
+
+    // Hydrate store from database on mount (non-blocking)
+    useEffect(() => {
+        const hydrateStore = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) {
+                    return // Middleware will handle redirect
+                }
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('onboarding_data, onboarding_completed')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profile?.onboarding_completed) {
+                    router.push('/dashboard')
+                    return
+                }
+
+                if (profile?.onboarding_data) {
+                    const data = profile.onboarding_data as any
+
+                    // Restore state
+                    if (data.purpose) setPurpose(data.purpose)
+                    if (data.resume_id) setResumeId(data.resume_id)
+                    if (data.resume_mode) setResumeMode(data.resume_mode)
+                    if (data.parsed_data) setParsedData(data.parsed_data)
+                    if (data.confirmed_role && data.confirmed_seniority) {
+                        setRoleInfo(data.confirmed_role, data.confirmed_seniority)
+                    }
+                    if (data.truth_completed) confirmTruth()
+                    if (data.design_intent) setDesignIntent(data.design_intent)
+
+                    // Determine step
+                    let step = 1
+                    if (data.purpose_completed) step = 2
+                    if (data.source_completed) step = 3
+                    if (data.role_completed) step = 4
+                    if (data.truth_completed) step = 5
+
+                    setStep(step)
+                }
+            } catch (error) {
+                console.error('Hydration error:', error)
+            }
+        }
+
+        hydrateStore()
+    }, [])
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -50,3 +115,4 @@ export default function OnboardingLayout({
         </div>
     )
 }
+

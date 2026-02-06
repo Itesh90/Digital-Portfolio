@@ -22,7 +22,8 @@ export default function SourcePage() {
         setResumeId,
         setStep,
         setRoleInfo,
-        setParsedData
+        setParsedData,
+        completeSourceStep
     } = useOnboardingStore()
 
     const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'parsing' | 'error'>('idle')
@@ -67,7 +68,8 @@ export default function SourcePage() {
                 )
             }
 
-            // Navigate to next step
+            // Save progress to database and navigate
+            await completeSourceStep()
             setStep(3)
             router.push('/onboarding/role')
 
@@ -108,7 +110,8 @@ export default function SourcePage() {
                 achievements: []
             })
 
-            // Skip to Role Selection
+            // Save progress and skip to Role Selection
+            await completeSourceStep()
             setStep(3)
             router.push('/onboarding/role')
 

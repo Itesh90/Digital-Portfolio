@@ -45,6 +45,9 @@ export interface OnboardingState {
     designIntent: DesignIntent | null
 }
 
+// Type alias for API compatibility
+export type OnboardingData = OnboardingState
+
 export interface TokenResponse {
     access_token: string
     refresh_token: string

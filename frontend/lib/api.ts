@@ -140,12 +140,19 @@ export const resumes = {
     },
 
     async parse(id: string): Promise<Resume> {
-        // Call Edge Function for AI parsing
-        const { data, error } = await supabase.functions.invoke('parse-resume', {
-            body: { resumeId: id }
+        // Call local API route for AI parsing
+        const response = await fetch('/api/resumes/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resumeId: id })
         })
 
-        if (error) throw error
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to parse resume')
+        }
+
+        const data = await response.json()
         return data.resume
     },
 
@@ -254,7 +261,11 @@ export const portfolios = {
 // =============================================================================
 
 export const api = {
-    // Auth
+    // Legacy auth methods (Supabase handles auth via cookies now)
+    setAccessToken: (_token: string | null) => {
+        // No-op: Supabase uses cookie-based auth
+    },
+    getMe: auth.getCurrentUser,
     getCurrentUser: auth.getCurrentUser,
     logout: auth.signOut,
     updateProfile: auth.updateProfile,
@@ -268,12 +279,67 @@ export const api = {
     parseResume: resumes.parse,
     deleteResume: resumes.delete,
 
+    // Legacy resume validation (now handled by parse)
+    async validateResume(resumeId: string): Promise<Resume> {
+        // Call parse which now validates too
+        return resumes.parse(resumeId)
+    },
+
+    // Legacy confirm resume method
+    async confirmResume(resumeId: string, parsedData: any, roleInfo?: any): Promise<Resume> {
+        // Update resume with confirmed data
+        const { data, error } = await supabase
+            .from('resumes')
+            .update({
+                parsed_data: parsedData,
+                inferred_role: roleInfo || null,
+                status: 'validated'
+            })
+            .eq('id', resumeId)
+            .select()
+            .single()
+
+        if (error) throw error
+        return data
+    },
+
     // Portfolios
     getPortfolios: portfolios.list,
     getPortfolio: portfolios.get,
-    createPortfolio: portfolios.create,
+
+    // Support both old and new createPortfolio signatures
+    async createPortfolio(nameOrData: string | { name: string; resume_id?: string }, resumeId?: string): Promise<Portfolio> {
+        if (typeof nameOrData === 'string') {
+            return portfolios.create({ name: nameOrData, resume_id: resumeId })
+        }
+        return portfolios.create(nameOrData)
+    },
+
     updatePortfolio: portfolios.update,
     deletePortfolio: portfolios.delete,
     generateBlueprint: portfolios.generateBlueprint,
     buildPortfolio: portfolios.build,
+
+    // Legacy design intent method
+    async applyDesignIntent(portfolioId: string, designConfig: any): Promise<Portfolio> {
+        return portfolios.update(portfolioId, { design_config: designConfig })
+    },
+
+    // Preview - now uses API route with fallback generation
+    async getPreview(portfolioId: string): Promise<{ html: string }> {
+        try {
+            const response = await fetch(`/api/builder/preview/${portfolioId}`)
+            if (response.ok) {
+                return await response.json()
+            }
+        } catch (e) {
+            console.warn('Preview API failed, falling back to direct fetch')
+        }
+
+        // Fallback to direct portfolio fetch
+        const portfolio = await portfolios.get(portfolioId)
+        const content = portfolio.content as { html?: string } | null
+        return { html: content?.html || '' }
+    },
 }
+

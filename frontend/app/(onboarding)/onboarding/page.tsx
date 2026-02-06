@@ -35,14 +35,15 @@ const PURPOSE_OPTIONS: { id: PortfolioPurpose; label: string; icon: any; descrip
 
 export default function PurposePage() {
     const router = useRouter()
-    const { purpose, setPurpose, setStep } = useOnboardingStore()
+    const { purpose, setPurpose, setStep, completePurposeStep } = useOnboardingStore()
 
     const handleSelect = (id: PortfolioPurpose) => {
         setPurpose(id)
     }
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (purpose) {
+            await completePurposeStep()
             setStep(2)
             router.push('/onboarding/source')
         }

@@ -8,7 +8,7 @@ import {
     Sparkles, Menu, X, ChevronDown, User
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 import type { User as UserType } from '@/types'
 
 // Minimal navigation - only essential items
@@ -26,36 +26,77 @@ export default function DashboardLayout({
     const router = useRouter()
     const pathname = usePathname()
     const [user, setUser] = useState<UserType | null>(null)
+    const [loading, setLoading] = useState(true)
     const [userMenuOpen, setUserMenuOpen] = useState(false)
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token')
-        if (!token) {
-            router.push('/login')
-            return
+        const getUser = async () => {
+            try {
+                // Get current session from Supabase
+                const { data: { user } } = await supabase.auth.getUser()
+
+                if (!user) {
+                    router.push('/login')
+                    return
+                }
+
+                // Get user profile from database
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                if (error || !profile) {
+                    // Profile might not exist yet, use session user data
+                    setUser({
+                        id: user.id,
+                        email: user.email || '',
+                        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
+                        username: user.email?.split('@')[0] || '',
+                        plan: 'free',
+                        onboarding_completed: false,
+                        created_at: new Date().toISOString(),
+                    })
+                } else {
+                    setUser({
+                        id: profile.id,
+                        email: profile.email || user.email || '',
+                        name: profile.name || user.email?.split('@')[0] || 'User',
+                        username: profile.username || '',
+                        plan: profile.plan || 'free',
+                        onboarding_completed: profile.onboarding_completed || false,
+                        created_at: profile.created_at || new Date().toISOString(),
+                    })
+                }
+            } catch (error) {
+                console.error('Auth error:', error)
+                router.push('/login')
+            } finally {
+                setLoading(false)
+            }
         }
 
-        api.setAccessToken(token)
+        getUser()
 
-        api.getMe()
-            .then((u) => {
-                setUser(u)
-            })
-            .catch(() => {
-                localStorage.removeItem('access_token')
-                localStorage.removeItem('refresh_token')
-                router.push('/login')
-            })
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (_event: string, session: any) => {
+                if (_event === 'SIGNED_OUT' || !session) {
+                    router.push('/login')
+                }
+            }
+        )
+
+        return () => subscription.unsubscribe()
     }, [router])
 
-    const handleLogout = () => {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        api.setAccessToken(null)
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
         router.push('/')
     }
 
-    if (!user) {
+    if (loading || !user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FDF6F0] via-[#F8C8DC] to-[#E8D5E0]">
                 <div className="animate-pulse flex items-center gap-3">

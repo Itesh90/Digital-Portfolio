@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 
 export default function DesignPage() {
     const router = useRouter()
-    const { resumeId, setDesignIntent, designIntent, reset } = useOnboardingStore()
+    const { resumeId, setDesignIntent, designIntent, reset, completeOnboarding } = useOnboardingStore()
 
     const [density, setDensity] = useState<DesignIntent['density']>('balanced')
     const [personality, setPersonality] = useState<DesignIntent['personality']>('professional')
@@ -19,33 +19,69 @@ export default function DesignPage() {
     const [loading, setLoading] = useState(false)
 
     const handleFinish = async () => {
-        if (!resumeId) return
-
         setLoading(true)
         const intent: DesignIntent = { density, personality, color_preference: color }
         setDesignIntent(intent)
 
         try {
-            // 1. Create Portfolio
-            const portfolio = await api.createPortfolio(resumeId)
+            let portfolioId: string | null = null
 
-            // 2. Generate Blueprint
-            await api.generateBlueprint(portfolio.id)
+            // Try to create portfolio if we have a resumeId
+            if (resumeId) {
+                try {
+                    // 1. Create Portfolio with a name
+                    const portfolio = await api.createPortfolio({
+                        name: 'My Portfolio',
+                        resume_id: resumeId
+                    })
+                    portfolioId = portfolio.id
 
-            // 3. Apply Design Intent (Backend Logic)
-            await api.applyDesignIntent(portfolio.id, intent)
+                    // 2. Generate Blueprint
+                    await api.generateBlueprint(portfolio.id)
 
-            // 4. Update local state if needed via refetch or trust the flow
-            // For now, simple transition
+                    // 3. Apply Design Intent (Backend Logic)
+                    await api.applyDesignIntent(portfolio.id, intent)
+                } catch (apiErr) {
+                    console.warn('Portfolio API calls failed, continuing to dashboard:', apiErr)
+                }
+            } else {
+                // No resume - create empty portfolio
+                try {
+                    const portfolio = await api.createPortfolio({
+                        name: 'My Portfolio'
+                    })
+                    portfolioId = portfolio.id
+                } catch (apiErr) {
+                    console.warn('Portfolio creation failed, continuing to dashboard:', apiErr)
+                }
+            }
+
+            // Mark onboarding as complete in database
+            await completeOnboarding()
 
             reset() // Clear onboarding state
-            toast.success('Portfolio created successfully!')
-            router.push(`/dashboard/builder/${portfolio.id}`)
+            toast.success('Setup complete! Welcome to your dashboard.')
+
+            // Redirect to builder if we have a portfolio, otherwise dashboard
+            if (portfolioId) {
+                router.push(`/dashboard/builder/${portfolioId}`)
+            } else {
+                router.push('/dashboard')
+            }
 
         } catch (err) {
             console.error(err)
-            toast.error('Failed to create portfolio')
-            setLoading(false)
+
+            // Even if there's an error, try to complete onboarding and redirect
+            try {
+                await completeOnboarding()
+                reset()
+                toast.success('Setup complete!')
+                router.push('/dashboard')
+            } catch (finalErr) {
+                toast.error('Failed to complete setup. Please try again.')
+                setLoading(false)
+            }
         }
     }
 

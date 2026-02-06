@@ -66,13 +66,8 @@ export default function StudioPage() {
             setError(null)
 
             try {
-                // Get auth token
-                const token = localStorage.getItem('access_token')
-                if (!token) {
-                    router.push('/login')
-                    return
-                }
-                api.setAccessToken(token)
+                // Supabase Auth handles authentication via cookies
+                // No need for manual token management
 
                 // Fetch portfolio data
                 let resumeData = null
@@ -86,12 +81,11 @@ export default function StudioPage() {
                     // Continue without resume data
                 }
 
-                // Start build via API
+                // Start build via API (legacy - needs migration to Supabase Edge Functions)
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/build/start`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify({
                         portfolio_id: portfolioId,
