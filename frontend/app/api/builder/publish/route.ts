@@ -3,11 +3,18 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
     try {
-        const { portfolioId } = await request.json()
+        const { portfolioId, html, files } = await request.json()
 
         if (!portfolioId) {
             return NextResponse.json(
                 { error: 'Missing portfolioId' },
+                { status: 400 }
+            )
+        }
+
+        if (!html) {
+            return NextResponse.json(
+                { error: 'No content to publish' },
                 { status: 400 }
             )
         }
@@ -28,19 +35,24 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        if (!portfolio.content?.html) {
-            return NextResponse.json(
-                { error: 'No content to publish' },
-                { status: 400 }
-            )
+        // Store assembled HTML and files in portfolio content
+        const publishedContent = {
+            ...(portfolio.content || {}),
+            html,
+            files: files || {},
+            published_at: new Date().toISOString()
         }
 
         // Update portfolio status to published
+        const origin = request.nextUrl.origin
+        const publishedUrl = `${origin}/p/${portfolioId}`
+
         const { data: updated, error: updateError } = await supabase
             .from('portfolios')
             .update({
                 status: 'published',
-                published_url: `https://portfolio.tablo.app/${portfolioId}`,
+                content: publishedContent,
+                published_url: publishedUrl,
                 updated_at: new Date().toISOString()
             })
             .eq('id', portfolioId)
@@ -53,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            url: updated.published_url
+            url: publishedUrl
         })
 
     } catch (error: any) {

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, Sparkles } from 'lucide-react'
+import { Send, Loader2, Sparkles, Pencil } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { useBuilderStore } from '@/lib/stores/builder-store'
 import { cn } from '@/lib/utils'
 
@@ -12,16 +13,24 @@ interface Message {
     timestamp: Date
 }
 
-export function ChatPanel() {
+interface ChatPanelProps {
+    initialPrompt?: string
+}
+
+export function ChatPanel({ initialPrompt }: ChatPanelProps) {
     const [input, setInput] = useState('')
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const hasInitialized = useRef(false)
 
     const {
         messages,
         isGenerating,
+        files,
         addMessage,
         setGenerating,
-        updatePreview
+        updatePreview,
+        setFiles,
+        mergeFiles
     } = useBuilderStore()
 
     const scrollToBottom = () => {
@@ -32,26 +41,42 @@ export function ChatPanel() {
         scrollToBottom()
     }, [messages])
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!input.trim() || isGenerating) return
+    useEffect(() => {
+        if (initialPrompt && !hasInitialized.current && messages.length === 0) {
+            hasInitialized.current = true
+            handleSubmit(undefined, initialPrompt)
+        }
+    }, [initialPrompt, messages.length])
+
+    const handleSubmit = async (e?: React.FormEvent, overridePrompt?: string) => {
+        if (e) e.preventDefault()
+        const promptText = overridePrompt || input
+        if (!promptText.trim() || isGenerating) return
 
         const userMessage: Message = {
             id: `msg-${Date.now()}`,
             role: 'user',
-            content: input.trim(),
+            content: promptText.trim(),
             timestamp: new Date()
         }
 
         addMessage(userMessage)
-        setInput('')
+        if (!overridePrompt) setInput('')
         setGenerating(true)
 
         try {
+            // Send current files for surgical edit context
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json'
+            }
+            if (Object.keys(files).length > 0) {
+                headers['x-current-files'] = JSON.stringify(files)
+            }
+
             // Call AI chat API
             const response = await fetch('/api/builder/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     portfolioId: useBuilderStore.getState().portfolio?.id,
                     message: userMessage.content,
@@ -70,8 +95,19 @@ export function ChatPanel() {
 
             addMessage(assistantMessage)
 
-            // Update preview if changes were made
-            if (data.html) {
+            // Update files if multi-file response
+            if (data.files) {
+                if (Object.keys(files).length === 0) {
+                    // First generation: set all files
+                    setFiles(data.files)
+                } else {
+                    // Surgical edit: merge only changed files
+                    mergeFiles(data.files)
+                }
+            }
+
+            // Legacy: Update preview if raw HTML was returned
+            if (data.html && !data.files) {
                 updatePreview(data.html)
             }
         } catch (error) {
@@ -147,7 +183,13 @@ export function ChatPanel() {
                                     : 'bg-gray-100 text-gray-900'
                             )}
                         >
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            {message.role === 'assistant' ? (
+                                <div className="text-sm prose prose-sm max-w-none prose-headings:text-purple-600 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:text-gray-900 prose-code:bg-gray-200 prose-code:px-1 prose-code:rounded prose-code:text-purple-700 prose-code:text-xs">
+                                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                                </div>
+                            ) : (
+                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -156,8 +198,13 @@ export function ChatPanel() {
                     <div className="flex justify-start">
                         <div className="bg-gray-100 rounded-2xl px-4 py-3">
                             <div className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                                <span className="text-sm text-gray-600">Thinking...</span>
+                                <Pencil className="w-4 h-4 text-purple-600 animate-pulse" />
+                                <span className="text-sm text-gray-600">Writing</span>
+                                <span className="flex gap-0.5">
+                                    <span className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </span>
                             </div>
                         </div>
                     </div>

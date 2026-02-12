@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const pdfParse = require('pdf-parse/lib/pdf-parse')
 
 export async function POST(request: NextRequest) {
     try {
@@ -29,9 +30,9 @@ export async function POST(request: NextRequest) {
             .update({ status: 'parsing' })
             .eq('id', resumeId)
 
-        // Check if Gemini API key is configured
-        const geminiKey = process.env.GEMINI_API_KEY
-        if (!geminiKey || geminiKey === 'your-gemini-api-key-here') {
+        // Check if OpenRouter API key is configured
+        const openRouterKey = process.env.OPENROUTER_API_KEY
+        if (!openRouterKey || openRouterKey === 'your-openrouter-api-key-here') {
             // Return mock data for development
             const mockParsedData = {
                 personal: {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
                     {
                         name: 'Portfolio Builder',
                         description: 'AI-powered portfolio website generator',
-                        technologies: ['Next.js', 'Supabase', 'Gemini AI'],
+                        technologies: ['Next.js', 'Supabase', 'AI'],
                     }
                 ],
             }
@@ -83,20 +84,50 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
                 resume: updated,
-                message: 'Using demo data (Gemini API key not configured)'
+                message: 'Using demo data (OpenRouter API key not configured)'
             })
         }
 
-        // Real Gemini parsing
-        const genAI = new GoogleGenerativeAI(geminiKey)
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        // Download file content from Supabase Storage
+        let fileContent = ''
+        if (resume.file_url) {
+            try {
+                // Extract the storage path from the file_url
+                const urlParts = resume.file_url.split('/storage/v1/object/public/')
+                const storagePath = urlParts[1] // e.g., "resumes/user_id/filename.pdf"
 
-        // If there's a file URL, we'd fetch and parse it
-        // For now, use a simpler approach with placeholder
+                if (storagePath) {
+                    const bucketAndPath = storagePath.split('/')
+                    const bucket = bucketAndPath[0]
+                    const filePath = bucketAndPath.slice(1).join('/')
+
+                    const { data: fileData, error: downloadError } = await supabase
+                        .storage
+                        .from(bucket)
+                        .download(filePath)
+
+                    if (!downloadError && fileData) {
+                        if (resume.filename?.toLowerCase().endsWith('.pdf')) {
+                            // Extract text from PDF using pdf-parse v1
+                            const arrayBuffer = await fileData.arrayBuffer()
+                            const buffer = Buffer.from(arrayBuffer)
+                            const pdfData = await pdfParse(buffer)
+                            fileContent = pdfData.text || ''
+                        } else {
+                            // For text files (.txt, .docx fallback)
+                            fileContent = await fileData.text()
+                        }
+                    }
+                }
+            } catch (downloadErr) {
+                console.error('File download error:', downloadErr)
+            }
+        }
+
+        // Parse resume with OpenRouter
         const prompt = `Parse this resume and extract structured data in JSON format:
 
-File: ${resume.filename}
-URL: ${resume.file_url || 'No file uploaded'}
+${fileContent ? `Resume Content:\n${fileContent.slice(0, 8000)}` : `File: ${resume.filename}\nNote: Could not read file content. Generate a placeholder structure based on the filename.`}
 
 Return a JSON object with these fields:
 {
@@ -110,8 +141,27 @@ Return a JSON object with these fields:
 
 Return ONLY valid JSON, no markdown.`
 
-        const result = await model.generateContent(prompt)
-        const responseText = result.response.text()
+        const orResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${openRouterKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'openrouter/free',
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+            })
+        })
+
+        if (!orResponse.ok) {
+            const errBody = await orResponse.text()
+            throw new Error(`OpenRouter failed: ${orResponse.status} ${errBody}`)
+        }
+
+        const orData = await orResponse.json()
+        const responseText = orData.choices?.[0]?.message?.content || ''
 
         let parsedData
         try {

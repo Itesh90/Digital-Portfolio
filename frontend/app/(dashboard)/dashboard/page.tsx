@@ -4,9 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
+import toast from 'react-hot-toast'
 import {
     Upload, ArrowRight, ArrowUpRight, Sparkles,
-    Clock, PenTool, Loader2
+    Clock, PenTool, Loader2, FileText, X, Trash2
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatRelativeTime, cn, isAllowedFileType } from '@/lib/utils'
@@ -19,6 +20,25 @@ export default function DashboardPage() {
     const [prompt, setPrompt] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [uploadingFile, setUploadingFile] = useState<File | null>(null)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+
+    const handleDelete = async (e: React.MouseEvent, portfolioId: string, portfolioName: string) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (!confirm(`Delete "${portfolioName || 'Untitled Portfolio'}"? This cannot be undone.`)) return
+
+        setDeletingId(portfolioId)
+        try {
+            await api.deletePortfolio(portfolioId)
+            setPortfolios(prev => prev.filter(p => p.id !== portfolioId))
+            toast.success('Portfolio deleted')
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to delete portfolio')
+        } finally {
+            setDeletingId(null)
+        }
+    }
 
     useEffect(() => {
         api.getPortfolios()
@@ -26,12 +46,15 @@ export default function DashboardPage() {
             .finally(() => setLoading(false))
     }, [])
 
+    const [resumeUploadData, setResumeUploadData] = useState<{ id: string, filename: string } | null>(null)
+
     // Dropzone for resume upload
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const file = acceptedFiles[0]
         if (!file) return
 
         if (!isAllowedFileType(file.name, ['pdf', 'docx', 'doc', 'txt'])) {
+            toast.error('Invalid file type. Please upload a PDF, DOCX, or TXT file.')
             return
         }
 
@@ -42,14 +65,22 @@ export default function DashboardPage() {
             const uploadRes = await api.uploadResume(file)
             await api.parseResume(uploadRes.id)
             await api.validateResume(uploadRes.id)
-            const portfolio = await api.createPortfolio(uploadRes.id, file.name.replace(/\.[^/.]+$/, ''))
-            router.push(`/dashboard/builder/${portfolio.id}`)
-        } catch (err) {
-            console.error(err)
+
+            // Instead of creating portfolio immediately, show the prompt modal
+            setResumeUploadData({ id: uploadRes.id, filename: file.name })
+            setPrompt('') // Reset prompt for the new input
+            setIsSubmitting(false)
+            setUploadingFile(null)
+            toast.success('Resume uploaded! Add your instructions below.')
+
+        } catch (err: any) {
+            console.error('Resume upload error:', err)
+            const message = err?.message || 'Failed to upload resume. Please try again.'
+            toast.error(message)
             setIsSubmitting(false)
             setUploadingFile(null)
         }
-    }, [router])
+    }, [])
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -65,15 +96,34 @@ export default function DashboardPage() {
 
     // Handle prompt submission
     const handleSubmit = async () => {
-        if (!prompt.trim()) return
+        if (!prompt.trim() && !resumeUploadData) return
 
         setIsSubmitting(true)
         try {
-            const emptyRes = await api.createEmptyResume()
-            const portfolio = await api.createPortfolio(emptyRes.id, prompt.slice(0, 50))
-            router.push(`/dashboard/builder/${portfolio.id}?initial_prompt=${encodeURIComponent(prompt)}`)
-        } catch (err) {
-            console.error(err)
+            let portfolioId: string
+            let initialPrompt: string
+
+            if (resumeUploadData) {
+                // Creating from resume
+                const portfolio = await api.createPortfolio(resumeUploadData.filename.replace(/\.[^/.]+$/, ''), resumeUploadData.id)
+                portfolioId = portfolio.id
+
+                const userInstructions = prompt.trim()
+                initialPrompt = userInstructions
+                    ? userInstructions
+                    : 'Build a professional portfolio website based on my resume. Include an About section, Experience, and Skills based on the resume content.'
+            } else {
+                // Creating from scratch
+                const emptyRes = await api.createEmptyResume()
+                const portfolio = await api.createPortfolio(prompt.slice(0, 50), emptyRes.id)
+                portfolioId = portfolio.id
+                initialPrompt = prompt
+            }
+
+            router.push(`/builder/${portfolioId}?initial_prompt=${encodeURIComponent(initialPrompt)}`)
+        } catch (err: any) {
+            console.error('Create portfolio error:', err)
+            toast.error(err?.message || 'Failed to create portfolio. Please try again.')
             setIsSubmitting(false)
         }
     }
@@ -83,6 +133,12 @@ export default function DashboardPage() {
             e.preventDefault()
             handleSubmit()
         }
+    }
+
+    // Cancel resume mode
+    const handleCancelResume = () => {
+        setResumeUploadData(null)
+        setPrompt('')
     }
 
     return (
@@ -105,7 +161,24 @@ export default function DashboardPage() {
                 <div className="max-w-2xl mx-auto">
 
                     {/* Main Input Card */}
-                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden relative">
+
+                        {/* Resume Indicator Overlay */}
+                        {resumeUploadData && (
+                            <div className="bg-[#9B3DDB]/5 border-b border-[#9B3DDB]/10 p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-[#9B3DDB]">
+                                    <FileText className="w-4 h-4" />
+                                    <span className="text-sm font-medium">Using resume: {resumeUploadData.filename}</span>
+                                </div>
+                                <button
+                                    onClick={handleCancelResume}
+                                    className="p-1 hover:bg-[#9B3DDB]/10 rounded-full text-[#9B3DDB] transition-colors"
+                                    title="Cancel resume"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
 
                         {/* Text Input */}
                         <div className="relative">
@@ -113,18 +186,22 @@ export default function DashboardPage() {
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Describe the portfolio you want to create..."
+                                placeholder={resumeUploadData
+                                    ? "Add specific instructions (e.g., 'Make it a dark theme', 'Focus on my React projects')..."
+                                    : "Describe the portfolio you want to create..."
+                                }
                                 className="w-full p-6 pr-16 text-[#1a1a1a] placeholder:text-gray-400 resize-none focus:outline-none text-lg min-h-[120px]"
                                 disabled={isSubmitting}
+                                autoFocus={!!resumeUploadData}
                             />
 
                             {/* Submit Button */}
                             <button
                                 onClick={handleSubmit}
-                                disabled={!prompt.trim() || isSubmitting}
+                                disabled={(!prompt.trim() && !resumeUploadData) || isSubmitting}
                                 className={cn(
                                     "absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                                    prompt.trim() && !isSubmitting
+                                    (prompt.trim() || resumeUploadData) && !isSubmitting
                                         ? "bg-[#1a1a1a] text-white hover:bg-[#2a2a2a]"
                                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                                 )}
@@ -137,41 +214,52 @@ export default function DashboardPage() {
                             </button>
                         </div>
 
-                        {/* Divider */}
-                        <div className="border-t border-gray-100" />
+                        {/* Divider - Only show if NOT in resume mode */}
+                        {!resumeUploadData && (
+                            <>
+                                <div className="border-t border-gray-100" />
 
-                        {/* Action Row */}
-                        <div className="p-4 flex items-center justify-between">
+                                {/* Action Row */}
+                                <div className="p-4 flex items-center justify-between">
 
-                            {/* Upload Resume Button */}
-                            <div
-                                {...getRootProps()}
-                                className={cn(
-                                    "flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition-all",
-                                    isDragActive
-                                        ? "bg-[#9B3DDB]/10 text-[#9B3DDB]"
-                                        : "hover:bg-gray-50 text-gray-600 hover:text-[#1a1a1a]"
-                                )}
-                            >
-                                <input {...getInputProps()} />
-                                {uploadingFile ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin text-[#9B3DDB]" />
-                                        <span className="font-medium text-[#9B3DDB]">Processing...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload className="w-5 h-5" />
-                                        <span className="font-medium">Upload Resume</span>
-                                    </>
-                                )}
-                            </div>
+                                    {/* Upload Resume Button */}
+                                    <div
+                                        {...getRootProps()}
+                                        className={cn(
+                                            "flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition-all",
+                                            isDragActive
+                                                ? "bg-[#9B3DDB]/10 text-[#9B3DDB]"
+                                                : "hover:bg-gray-50 text-gray-600 hover:text-[#1a1a1a]"
+                                        )}
+                                    >
+                                        <input {...getInputProps()} />
+                                        {uploadingFile ? (
+                                            <div className="flex items-center gap-3 w-full">
+                                                <Loader2 className="w-5 h-5 animate-spin text-[#9B3DDB] flex-shrink-0" />
+                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                    <FileText className="w-4 h-4 text-[#9B3DDB] flex-shrink-0" />
+                                                    <span className="font-medium text-[#9B3DDB] truncate text-sm">{uploadingFile.name}</span>
+                                                    <span className="text-xs text-[#9B3DDB]/60 flex-shrink-0 uppercase">
+                                                        {uploadingFile.name.split('.').pop()}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-[#9B3DDB]/80 flex-shrink-0">Processing...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-5 h-5" />
+                                                <span className="font-medium">Upload Resume</span>
+                                            </>
+                                        )}
+                                    </div>
 
-                            {/* Supported formats hint */}
-                            <span className="text-xs text-gray-400 hidden sm:block">
-                                PDF, DOCX, TXT
-                            </span>
-                        </div>
+                                    {/* Supported formats hint */}
+                                    <span className="text-xs text-gray-400 hidden sm:block">
+                                        PDF, DOCX, TXT
+                                    </span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>
@@ -220,8 +308,8 @@ export default function DashboardPage() {
                             {portfolios.slice(0, 6).map((portfolio) => (
                                 <Link
                                     key={portfolio.id}
-                                    href={`/dashboard/builder/${portfolio.id}`}
-                                    className="group bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md hover:border-gray-200 transition-all"
+                                    href={`/builder/${portfolio.id}`}
+                                    className="group bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md hover:border-gray-200 transition-all relative"
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className="w-10 h-10 bg-[#9B3DDB]/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -236,7 +324,21 @@ export default function DashboardPage() {
                                                 {formatRelativeTime(portfolio.updated_at)}
                                             </div>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#9B3DDB] transition-colors flex-shrink-0" />
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <button
+                                                onClick={(e) => handleDelete(e, portfolio.id, portfolio.name)}
+                                                disabled={deletingId === portfolio.id}
+                                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Delete portfolio"
+                                            >
+                                                {deletingId === portfolio.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#9B3DDB] transition-colors" />
+                                        </div>
                                     </div>
                                 </Link>
                             ))}

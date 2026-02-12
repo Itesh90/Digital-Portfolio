@@ -32,10 +32,17 @@ export default function DashboardLayout({
     useEffect(() => {
         const getUser = async () => {
             try {
-                // Get current session from Supabase
-                const { data: { user } } = await supabase.auth.getUser()
+                // Try getSession first (reads from cookies/localStorage, no network call)
+                const { data: { session } } = await supabase.auth.getSession()
+                let authUser = session?.user ?? null
 
-                if (!user) {
+                // If no session locally, try getUser as fallback (makes network call)
+                if (!authUser) {
+                    const { data: { user } } = await supabase.auth.getUser()
+                    authUser = user
+                }
+
+                if (!authUser) {
                     router.push('/login')
                     return
                 }
@@ -44,16 +51,16 @@ export default function DashboardLayout({
                 const { data: profile, error } = await supabase
                     .from('profiles')
                     .select('*')
-                    .eq('id', user.id)
+                    .eq('id', authUser.id)
                     .single()
 
                 if (error || !profile) {
                     // Profile might not exist yet, use session user data
                     setUser({
-                        id: user.id,
-                        email: user.email || '',
-                        name: user.user_metadata?.name || user.email?.split('@')[0] || 'User',
-                        username: user.email?.split('@')[0] || '',
+                        id: authUser.id,
+                        email: authUser.email || '',
+                        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+                        username: authUser.email?.split('@')[0] || '',
                         plan: 'free',
                         onboarding_completed: false,
                         created_at: new Date().toISOString(),
@@ -61,8 +68,8 @@ export default function DashboardLayout({
                 } else {
                     setUser({
                         id: profile.id,
-                        email: profile.email || user.email || '',
-                        name: profile.name || user.email?.split('@')[0] || 'User',
+                        email: profile.email || authUser.email || '',
+                        name: profile.name || authUser.email?.split('@')[0] || 'User',
                         username: profile.username || '',
                         plan: profile.plan || 'free',
                         onboarding_completed: profile.onboarding_completed || false,
@@ -70,7 +77,7 @@ export default function DashboardLayout({
                     })
                 }
             } catch (error) {
-                console.error('Auth error:', error)
+                console.error('[Dashboard Auth] Auth error:', error)
                 router.push('/login')
             } finally {
                 setLoading(false)
@@ -126,7 +133,12 @@ export default function DashboardLayout({
                         {/* Center Navigation - Desktop */}
                         <nav className="hidden md:flex items-center gap-1">
                             {navigation.map((item) => {
-                                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                                // For the root dashboard path, require exact match
+                                // For other paths (portfolios, settings), allow sub-path matching
+                                const isActive = item.href === '/dashboard'
+                                    ? pathname === '/dashboard'
+                                    : pathname === item.href || pathname.startsWith(item.href + '/')
+
                                 return (
                                     <Link
                                         key={item.name}
@@ -150,7 +162,9 @@ export default function DashboardLayout({
                             {/* Mobile Nav Toggle */}
                             <div className="md:hidden flex items-center gap-2">
                                 {navigation.map((item) => {
-                                    const isActive = pathname === item.href
+                                    const isActive = item.href === '/dashboard'
+                                        ? pathname === '/dashboard'
+                                        : pathname === item.href || pathname.startsWith(item.href + '/')
                                     return (
                                         <Link
                                             key={item.name}
