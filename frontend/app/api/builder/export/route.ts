@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         // Add README
         zip.file('README.md', `# Portfolio
 
-This portfolio was generated with Tablo.
+This portfolio was generated with Folio.
 
 ## How to use
 

@@ -110,6 +110,9 @@ ${resumeTextContent ? `- Resume Text Content (Raw):\n${resumeTextContent.slice(0
 ${currentFilesContext}
 
 IMPORTANT OUTPUT FORMAT:
+You MUST ALWAYS output the actual portfolio code using <file> blocks. NEVER just describe or plan what you will build.
+A response without <file> blocks is a FAILED response.
+
 When generating or modifying the portfolio, output SEPARATE FILES using this exact format:
 
 <file path="/index.html">
@@ -124,6 +127,10 @@ When generating or modifying the portfolio, output SEPARATE FILES using this exa
 ...full JS content...
 </file>
 
+You may include a BRIEF 1-2 sentence summary before the file blocks, but the <file> blocks are MANDATORY.
+If this is the first message, you MUST generate all 3 files (index.html, styles.css, script.js) immediately.
+Do NOT ask clarifying questions on the first message — just build a great portfolio using the resume data provided.
+
 CRITICAL INSTRUCTIONS FOR RESUME-BASED BUILDS:
 1. **NO GENERIC TEMPLATES**: Do NOT output a generic "John Doe" portfolio.
 2. **USE THE DATA**: You MUST use the specific names, job titles, companies, dates, schools, and projects from the Resume Data provided above.
@@ -133,37 +140,40 @@ CRITICAL INSTRUCTIONS FOR RESUME-BASED BUILDS:
    - For a Marketer: Use bold gradients, vibrant call-to-action sections, and energetic color schemes.
    - For any other profession: Use a striking color palette with at least 3-4 complementary colors.
 4. **COMPLETE CONTENT**: Fill the "About", "Experience", "Skills", and "Projects" sections with the REAL data. Do not use placeholders like "Project Name" or "Company XYZ".
-5. **ICONS**: You MUST use FontAwesome 6.4.0 for icons. Include this EXACT link in the <head>:
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-   Do NOT use other icon libraries or broken CDNs. Use icons like <i class="fa-solid fa-user"></i>.
+5. **ICONS**: You MUST use FontAwesome 6.4.0 for icons. Include this EXACT link in the head:
+   link rel stylesheet href https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css
+   Do NOT use other icon libraries or broken CDNs. Use icons like i class fa-solid fa-user.
+8. **TAILWIND CSS**: You MUST include Tailwind CSS via CDN in the head of index.html:
+   script src https://cdn.tailwindcss.com /script
+   Use Tailwind utility classes for layout, spacing, typography, colors, and responsive design.
+   Use the styles.css file ONLY for custom animations, keyframes, gradients, glassmorphism effects, and things Tailwind cannot do.
+   Prefer Tailwind classes like: bg-gray-900, text-white, flex, grid, p-6, rounded-xl, shadow-lg, hover:scale-105, transition-all, etc.
 6. **PERSPECTIVE**: Write all content in the **FIRST PERSON** ("I", "Me", "My"). Do NOT use the candidate's name or "He/She" in the body text. Example: "I am a Full Stack Developer", not "John is a Full Stack Developer".
 7. **VIBRANT & COLORFUL DESIGN** (CRITICAL):
-   - Use bold, vibrant color palettes. NEVER use plain white backgrounds or boring gray schemes.
-   - Use rich gradient backgrounds (e.g., linear-gradient with 2-3 colors like purple-to-blue, orange-to-pink, teal-to-emerald).
-   - Add glassmorphism effects (backdrop-filter: blur, semi-transparent backgrounds with rgba colors).
-   - Use colorful accent elements: glowing borders, colored shadows (box-shadow with colored rgba), gradient text effects.
-   - Section backgrounds should alternate between dark rich tones and gradient overlays.
-   - Skill tags, buttons, and badges should have vibrant colored backgrounds (not gray).
+   - Use bold, vibrant color palettes but prioritizing READABILITY.
+   - **CONTRAST RULE**: If background is dark/vibrant, text MUST be white or very light gray. If background is light, text MUST be dark gray/black. NEVER use dark text on dark backgrounds.
+   - **CONTAINERS**: Main content (About, Experience, Projects) MUST be inside cards or sections with semi-transparent backgrounds (glassmorphism: background rgba(255,255,255,0.1), backdrop-filter blur(10px), border 1px solid rgba(255,255,255,0.1)). Do NOT place text directly on loud gradients.
+   - Use rich gradient backgrounds for the body or section backgrounds (e.g., linear-gradient with 2-3 harmonious colors).
+   - Use colorful accent elements: glowing borders, colored shadows, gradient text for headings (background-clip: text).
+   - Section backgrounds should alternate to create rhythm.
+   - Skill tags, buttons, and badges should have vibrant colored backgrounds.
    - Add subtle animated gradients or color-shifting hover effects.
-   - Use CSS custom properties for a cohesive color system with at least: --primary, --secondary, --accent, --gradient-start, --gradient-end.
+   - Use CSS custom properties: --primary, --secondary, --accent, --bg-gradient.
 
 Rules:
 1. Always generate at least: /index.html, /styles.css, /script.js
-2. The index.html MUST link to styles.css and script.js:
-   <link rel="stylesheet" href="styles.css"> in <head>
-   <script src="script.js"></script> before </body>
-3. Use modern CSS (flexbox, grid, custom properties, multi-color gradients, backdrop-filter)
-4. Make it fully responsive with media queries
-5. Use VIBRANT color schemes with CSS variables — pick bold, energetic palettes, not safe neutrals
-6. Include smooth animations, transitions, hover effects, and subtle motion (e.g., floating elements, gradient animations, scroll-triggered fades)
-7. The HTML should reference the CSS file, not embed styles inline
-8. If the user is requesting a SMALL CHANGE, only return the modified file(s), not all files
-9. Before the file blocks, write a brief explanation of what you changed
+2. The index.html MUST include in the head: Tailwind CDN script, FontAwesome CSS link, Google Fonts link, and styles.css link. Include script.js before closing body.
+3. Use Tailwind CSS utility classes as the PRIMARY styling method. Use styles.css only for custom animations, keyframes, complex gradients, and effects Tailwind cannot handle.
+4. Make it fully responsive using Tailwind breakpoints (sm:, md:, lg:, xl:)
+5. Use VIBRANT but READABLE color schemes — ensure high contrast
+6. Include smooth animations, transitions, hover effects (use Tailwind transition classes + custom CSS keyframes)
+7. If the user is requesting a SMALL CHANGE, only return the modified file(s), not all files
+8. Before the file blocks, write a brief explanation of what you changed
 
 Typography:
-- Use Google Fonts (Poppins, Inter, Space Grotesk, or similar modern fonts) via <link> in the HTML head
-- Use a clear type hierarchy with proper sizing
-- Consider gradient text effects for headings using background-clip: text`
+- Use Google Fonts (Poppins, Inter, Space Grotesk) via link tag in head
+- Use Tailwind font-size classes (text-sm, text-lg, text-2xl, text-5xl, etc.) for hierarchy
+- Use gradient text for MAIN HEADINGS only, keeping body text solid for readability`
 
         const orMessages = [
             { role: 'system' as const, content: systemPrompt },

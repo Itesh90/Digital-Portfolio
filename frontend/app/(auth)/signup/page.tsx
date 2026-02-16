@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -81,10 +81,10 @@ export default function SignupPage() {
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
                 <Link href="/" className="inline-flex items-center gap-2">
-                    <div className="w-10 h-10 bg-[#1a1a1a] rounded-xl flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+                        <Sparkles className="w-6 h-6 text-white" />
                     </div>
-                    <span className="font-heading font-bold text-2xl">Tablo.</span>
+                    <span className="font-heading font-bold text-2xl">Folio.</span>
                 </Link>
             </div>
 

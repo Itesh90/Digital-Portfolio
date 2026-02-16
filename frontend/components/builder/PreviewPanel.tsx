@@ -242,7 +242,7 @@ export function PreviewPanel() {
                             className="w-full h-full border-0"
                             style={{ minHeight: '600px' }}
                             title="Portfolio Preview"
-                            sandbox="allow-scripts"
+                            sandbox="allow-scripts allow-same-origin"
                         />
                     ) : (
                         <div className="h-full flex items-center justify-center bg-gray-50 min-h-[400px]">

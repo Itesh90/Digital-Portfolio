@@ -124,10 +124,10 @@ export default function DashboardLayout({
 
                         {/* Logo */}
                         <Link href="/dashboard" className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-heading font-bold text-lg text-[#1a1a1a]">Tablo.</span>
+                            <span className="font-heading font-bold text-lg text-[#1a1a1a]">Folio.</span>
                         </Link>
 
                         {/* Center Navigation - Desktop */}

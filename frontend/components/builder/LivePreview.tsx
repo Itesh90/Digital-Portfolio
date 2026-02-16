@@ -54,7 +54,27 @@ export function LivePreview({ className }: LivePreviewProps) {
         // Check if we have an index.html
         const indexFile = files['/index.html']
         if (indexFile) {
-            return indexFile.content
+            let html = indexFile.content
+
+            // Inline CSS: replace <link href="styles.css"> with <style>...</style>
+            const cssFile = files['/styles.css']
+            if (cssFile) {
+                html = html.replace(
+                    /<link[^>]*href=["']\.?\/?styles\.css["'][^>]*\/?>/gi,
+                    `<style>${cssFile.content}</style>`
+                )
+            }
+
+            // Inline JS: replace <script src="script.js"> with <script>...</script>
+            const jsFile = files['/script.js']
+            if (jsFile) {
+                html = html.replace(
+                    /<script[^>]*src=["']\.?\/?script\.js["'][^>]*><\/script>/gi,
+                    `<script>${jsFile.content}</script>`
+                )
+            }
+
+            return html
         }
 
         // Otherwise, assemble from parts

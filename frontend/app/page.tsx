@@ -16,10 +16,10 @@ import { cn, isAllowedFileType } from '@/lib/utils'
 // ----- Logo Component -----
 const Logo = () => (
     <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20">
             <Sparkles className="w-5 h-5 text-white" />
         </div>
-        <span className="font-heading font-bold text-xl text-[#1a1a1a]">Tablo.</span>
+        <span className="font-heading font-bold text-xl text-[#1a1a1a]">Folio.</span>
     </div>
 )
 
@@ -304,8 +304,7 @@ export default function LandingPage() {
                     </div>
 
                     <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-[#1a1a1a]">
-                        Turn your ideas<br />
-                        into apps with AI.
+                        Turn your resume into a portfolio with AI.
                     </h1>
 
                     <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -465,7 +464,7 @@ export default function LandingPage() {
                         <Link href="#" className="group bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 hover:shadow-lg transition-all">
                             <BookOpen className="w-8 h-8 text-[#9B3DDB] mb-4" />
                             <h3 className="text-lg font-bold mb-2 group-hover:text-[#9B3DDB] transition">Documentation</h3>
-                            <p className="text-gray-600 text-sm">Learn how to get the most out of Tablo with our comprehensive guides.</p>
+                            <p className="text-gray-600 text-sm">Learn how to get the most out of Folio with our comprehensive guides.</p>
                         </Link>
 
                         <Link href="#" className="group bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/50 hover:shadow-lg transition-all">
@@ -502,7 +501,7 @@ export default function LandingPage() {
                             <div className="text-4xl font-bold mb-4">$0<span className="text-lg font-normal text-gray-500">/month</span></div>
                             <p className="text-gray-600 mb-6">Perfect for getting started</p>
                             <ul className="space-y-3 mb-8">
-                                {['1 portfolio', 'Basic templates', 'Tablo subdomain', 'Community support'].map((item, i) => (
+                                {['1 portfolio', 'Basic templates', 'Folio subdomain', 'Community support'].map((item, i) => (
                                     <li key={i} className="flex items-center gap-2 text-sm">
                                         <CheckCircle className="w-4 h-4 text-green-500" />
                                         {item}
@@ -607,7 +606,7 @@ export default function LandingPage() {
 
                     <div className="pt-8 border-t border-gray-200/50 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="text-sm text-gray-500">
-                            © 2024 Tablo. All rights reserved.
+                            © 2026 Folio. All rights reserved.
                         </div>
                         <div className="flex items-center gap-6 text-sm text-gray-500">
                             <Link href="#" className="hover:text-[#1a1a1a] transition">Twitter</Link>
