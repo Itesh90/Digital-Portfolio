@@ -12,7 +12,7 @@ import { api } from '@/lib/api'
 import { cn, formatFileSize, isAllowedFileType } from '@/lib/utils'
 import type { Resume } from '@/types'
 
-const ALLOWED_TYPES = ['pdf', 'docx', 'doc', 'txt']
+const ALLOWED_TYPES = ['pdf', 'docx', 'doc', 'txt', 'png', 'jpg', 'jpeg']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 export default function SourcePage() {
@@ -126,32 +126,35 @@ export default function SourcePage() {
 
     return (
         <div className="space-y-8">
-            <div className="text-center">
-                <h1 className="text-3xl font-heading font-bold text-gray-900 mb-2">
+            <div className="text-center animate-slide-up">
+                <h1 className="text-4xl font-heading font-bold text-gray-900 mb-4 tracking-tight">
                     How do you want to start?
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-lg text-gray-600 max-w-xl mx-auto">
                     We recommend uploading your resume for the best results.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
                 {/* Option 1: Upload */}
                 <div
                     {...getRootProps()}
                     className={cn(
-                        'p-8 rounded-xl border-2 border-dashed text-center transition-all cursor-pointer group hover:bg-gray-50',
-                        isDragActive ? 'border-accent bg-accent/5' : 'border-gray-200 hover:border-accent/30',
+                        'p-8 rounded-2xl border-2 border-dashed text-center transition-all duration-300 cursor-pointer group bg-white/40 backdrop-blur-sm',
+                        isDragActive ? 'border-[#9B3DDB] bg-[#9B3DDB]/5 ring-4 ring-[#9B3DDB]/10' : 'border-gray-300 hover:border-[#9B3DDB]/50 hover:bg-white/60 hover:shadow-xl hover:-translate-y-1',
                         uploadState !== 'idle' && 'pointer-events-none opacity-50'
                     )}
                 >
                     <input {...getInputProps()} />
 
-                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    <div className={cn(
+                        "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300",
+                        isDragActive ? "bg-gradient-to-br from-[#9B3DDB] to-[#6b21a8] text-white scale-110 shadow-lg" : "bg-[#9B3DDB]/10 text-[#9B3DDB] group-hover:bg-gradient-to-br group-hover:from-[#9B3DDB] group-hover:to-[#6b21a8] group-hover:text-white group-hover:scale-110 group-hover:shadow-lg"
+                    )}>
                         {uploadState === 'uploading' || uploadState === 'parsing' ? (
-                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                            <Loader2 className="w-8 h-8 animate-spin" />
                         ) : (
-                            <Upload className="w-8 h-8 text-blue-600" />
+                            <Upload className="w-8 h-8" />
                         )}
                     </div>
 
@@ -159,17 +162,21 @@ export default function SourcePage() {
 
                     {uploadState === 'idle' ? (
                         <>
-                            <p className="text-sm text-gray-600 mb-4">
-                                PDF, DOCX, TXT supported.<br />
+                            <p className="text-sm text-gray-500 mb-4">
+                                PDF, DOCX, TXT, PNG, JPEG supported.<br />
                                 We'll extract everything for you.
                             </p>
-                            <div className="text-xs text-blue-600 font-medium bg-blue-50 py-1 px-3 rounded-full inline-block">
+                            <div className="text-xs font-bold text-[#9B3DDB] bg-[#9B3DDB]/10 py-1.5 px-4 rounded-full inline-block border border-[#9B3DDB]/20">
                                 Recommended
                             </div>
                         </>
                     ) : (
-                        <div className="text-blue-600 font-medium">
-                            {uploadState === 'uploading' ? 'Uploading...' : 'Analyzing...'}
+                        <div className="text-[#9B3DDB] font-medium flex items-center justify-center gap-2">
+                            <span className="relative flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#9B3DDB] opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#9B3DDB]"></span>
+                            </span>
+                            {uploadState === 'uploading' ? 'Uploading safely...' : 'Extracting context with AI...'}
                         </div>
                     )}
                 </div>
@@ -178,10 +185,10 @@ export default function SourcePage() {
                 <button
                     onClick={handleBuildFromScratch}
                     disabled={uploadState !== 'idle'}
-                    className="p-8 rounded-xl border-2 border-gray-200 text-center transition-all hover:border-gray-300 hover:bg-gray-50 group disabled:opacity-50"
+                    className="p-8 rounded-2xl border-2 border-transparent text-center transition-all duration-300 group disabled:opacity-50 bg-white/40 backdrop-blur-sm shadow-sm hover:bg-white/60 hover:shadow-xl hover:-translate-y-1 hover:border-[#9B3DDB]/30"
                 >
-                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                        <PenTool className="w-8 h-8 text-gray-500" />
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 text-gray-500 group-hover:bg-[#9B3DDB]/10 group-hover:text-[#9B3DDB] group-hover:scale-110 group-hover:shadow-lg">
+                        <PenTool className="w-8 h-8" />
                     </div>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Build from Scratch</h3>

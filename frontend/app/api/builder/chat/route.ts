@@ -79,12 +79,13 @@ export async function POST(request: NextRequest) {
             content: msg.content
         })) || []
 
-        // Call OpenRouter for chat response
-        const openRouterKey = process.env.OPENROUTER_API_KEY
+        // Call NVIDIA NIM for chat response
+        const nvidiaApiKey = process.env.NVIDIA_NIM_API_KEY
+        const nvidiaBaseUrl = process.env.NVIDIA_NIM_BASE_URL || 'https://integrate.api.nvidia.com/v1'
 
-        if (!openRouterKey || openRouterKey === 'your-openrouter-api-key-here') {
+        if (!nvidiaApiKey) {
             return NextResponse.json(
-                { error: 'AI service not configured' },
+                { error: 'AI service not configured (NVIDIA_NIM_API_KEY missing)' },
                 { status: 500 }
             )
         }
@@ -184,25 +185,25 @@ Typography:
             { role: 'user' as const, content: message }
         ]
 
-        const orResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const orResponse = await fetch(`${nvidiaBaseUrl}/chat/completions`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${openRouterKey}`,
+                'Authorization': `Bearer ${nvidiaApiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://portfolio-builder.com', // Required by OpenRouter
-                'X-Title': 'Portfolio Builder', // Required by OpenRouter
             },
             body: JSON.stringify({
-                model: 'openrouter/free',
+                model: 'mistralai/devstral-2-123b-instruct-2512',
                 messages: orMessages,
-                temperature: 0.8, // Slightly increased for more creativity/uniqueness
-                max_tokens: 16384,
+                temperature: 0.15,
+                top_p: 0.95,
+                max_tokens: 8192,
+                seed: 42,
             })
         })
 
         if (!orResponse.ok) {
             const errBody = await orResponse.text()
-            console.error('OpenRouter API Error:', orResponse.status, errBody)
+            console.error('NVIDIA NIM API Error:', orResponse.status, errBody)
             let errorMessage = `AI Service Error (${orResponse.status})`
 
             try {

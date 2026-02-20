@@ -10,7 +10,7 @@ import {
 import { api } from '@/lib/api'
 import { cn, formatFileSize, isAllowedFileType } from '@/lib/utils'
 
-const ALLOWED_TYPES = ['pdf', 'docx', 'doc', 'txt']
+const ALLOWED_TYPES = ['pdf', 'docx', 'doc', 'txt', 'png', 'jpg', 'jpeg']
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 type BuildStatus = 'idle' | 'uploading' | 'parsing' | 'creating' | 'done'

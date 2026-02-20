@@ -53,7 +53,7 @@ export default function DashboardPage() {
         const file = acceptedFiles[0]
         if (!file) return
 
-        if (!isAllowedFileType(file.name, ['pdf', 'docx', 'doc', 'txt'])) {
+        if (!isAllowedFileType(file.name, ['pdf', 'docx', 'doc', 'txt', 'png', 'jpg', 'jpeg'])) {
             toast.error('Invalid file type. Please upload a PDF, DOCX, or TXT file.')
             return
         }

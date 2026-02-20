@@ -144,13 +144,19 @@ export default function DashboardLayout({
                                         key={item.name}
                                         href={item.href}
                                         className={cn(
-                                            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                                            'relative px-4 py-2 rounded-lg text-sm font-medium transition-colors group',
                                             isActive
-                                                ? 'bg-[#9B3DDB]/10 text-[#9B3DDB]'
+                                                ? 'text-[#9B3DDB]'
                                                 : 'text-gray-600 hover:text-[#1a1a1a] hover:bg-gray-50'
                                         )}
                                     >
                                         {item.name}
+                                        {/* Animated Top Border Indicator */}
+                                        {isActive ? (
+                                            <span className="absolute top-0 left-0 w-full h-[2px] bg-[#9B3DDB] rounded-b-md" />
+                                        ) : (
+                                            <span className="absolute top-0 left-0 w-full h-[2px] bg-[#9B3DDB] rounded-b-md scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
+                                        )}
                                     </Link>
                                 )
                             })}

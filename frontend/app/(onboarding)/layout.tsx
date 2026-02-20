@@ -78,22 +78,22 @@ export default function OnboardingLayout({
     }, [])
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-[#f8f9fa] via-[#f3e8ff] to-[#fff0f5] flex flex-col relative overflow-hidden">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200">
+            <header className="sticky top-0 z-50 bg-white/50 backdrop-blur-md border-b border-white/20">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-[#9B3DDB] to-[#6b21a8] shadow-md shadow-[#9B3DDB]/20">
                             <Sparkles className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-heading font-bold text-lg">PortfolioBuilder</span>
+                        <span className="font-heading font-bold text-lg tracking-tight">Folio</span>
                     </div>
 
                     <div className="flex items-center gap-4 text-sm font-medium text-gray-500">
                         <span>Step {currentStep} of {totalSteps}</span>
-                        <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-32 h-2 bg-gray-200/50 backdrop-blur-sm rounded-full overflow-hidden shadow-inner">
                             <div
-                                className="h-full bg-accent transition-all duration-500 ease-out"
+                                className="h-full bg-gradient-to-r from-[#9B3DDB] to-[#c084fc] transition-all duration-500 ease-out shadow-[0_0_10px_rgba(155,61,219,0.5)]"
                                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                             />
                         </div>

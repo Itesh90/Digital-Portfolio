@@ -45,7 +45,7 @@ const HeroInteractionBox = () => {
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const f = acceptedFiles[0]
         if (!f) return
-        if (!isAllowedFileType(f.name, ['pdf', 'docx', 'doc', 'txt'])) {
+        if (!isAllowedFileType(f.name, ['pdf', 'docx', 'doc', 'txt', 'png', 'jpg', 'jpeg'])) {
             setError('Invalid file type')
             return
         }
@@ -147,11 +147,11 @@ const HeroInteractionBox = () => {
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full p-4 text-center cursor-pointer min-h-[120px]" onClick={() => (document.querySelector('input[type=file]') as HTMLInputElement)?.click()}>
                                 {file ? (
-                                    <>
+                                    <div className="flex flex-col items-center animate-scale-in">
                                         <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
                                         <div className="text-[#1a1a1a] font-medium">{file.name}</div>
                                         <div className="text-gray-500 text-sm">Ready to analyze</div>
-                                    </>
+                                    </div>
                                 ) : (
                                     <>
                                         <Upload className="w-8 h-8 text-[#9B3DDB] mb-2" />
@@ -247,8 +247,9 @@ export default function LandingPage() {
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
                     {navItems.map((item) => (
-                        <Link key={item.name} href={item.href} className="hover:text-[#1a1a1a] transition">
+                        <Link key={item.name} href={item.href} className="relative hover:text-[#1a1a1a] transition pb-1 group overflow-hidden">
                             {item.name}
+                            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-[#1a1a1a] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
                         </Link>
                     ))}
                 </div>
@@ -303,11 +304,11 @@ export default function LandingPage() {
                         THE FULL-STACK NO-CODE APP BUILDER
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-[#1a1a1a]">
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 text-[#1a1a1a] animate-slide-up" style={{ animationFillMode: 'both' }}>
                         Turn your resume into a portfolio with AI.
                     </h1>
 
-                    <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
+                    <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
                         Build a professional product, launch to customers, and grow without limits.
                     </p>
 
@@ -411,7 +412,7 @@ export default function LandingPage() {
 
                     <div className="grid md:grid-cols-3 gap-8 mb-16">
                         {testimonials.map((testimonial, index) => (
-                            <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50">
+                            <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
                                 <div className="flex items-center gap-1 mb-4">
                                     {[...Array(5)].map((_, i) => (
                                         <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
@@ -550,9 +551,9 @@ export default function LandingPage() {
                                 Join thousands of professionals who've transformed their online presence. Start building for free today.
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <Link href="/signup" className="px-8 py-4 bg-white text-[#1a1a1a] rounded-full font-medium hover:bg-gray-100 transition flex items-center gap-2">
+                                <Link href="/signup" className="group px-8 py-4 bg-white text-[#1a1a1a] rounded-full font-medium hover:bg-gray-100 transition flex items-center gap-2">
                                     Get started for free
-                                    <ArrowRight className="w-5 h-5" />
+                                    <ArrowRight className="w-5 h-5 group-hover:animate-pulse-slow transition-transform group-hover:translate-x-1" />
                                 </Link>
                                 <Link href="#product" className="px-8 py-4 border border-white/30 text-white rounded-full font-medium hover:bg-white/10 transition">
                                     Learn more

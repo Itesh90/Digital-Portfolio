@@ -45,19 +45,20 @@ export default function PortfoliosPage() {
             {/* Content */}
             {portfolios.length === 0 ? (
                 /* Empty State */
-                <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-                    <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <Globe className="w-10 h-10 text-gray-300" />
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-gray-100 p-16 text-center animate-fade-in">
+                    <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse-slow">
+                        <Globe className="w-10 h-10 text-[#9B3DDB]/50" />
                     </div>
-                    <h2 className="text-xl font-semibold text-[#1a1a1a] mb-2">
+                    <h2 className="text-xl font-semibold text-[#1a1a1a] mb-2 animate-slide-up" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
                         You haven't published any portfolios yet.
                     </h2>
-                    <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                    <p className="text-gray-500 mb-8 max-w-md mx-auto animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
                         Publish a portfolio to make it visible here. Once published, your portfolio will be accessible via a public URL.
                     </p>
                     <Link
                         href="/dashboard"
-                        className="inline-flex items-center px-6 py-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg font-medium transition-colors"
+                        className="inline-flex items-center px-6 py-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg font-medium transition-transform hover:scale-105 animate-slide-up"
+                        style={{ animationDelay: '300ms', animationFillMode: 'both' }}
                     >
                         <PenTool className="w-4 h-4 mr-2" />
                         Create Portfolio
